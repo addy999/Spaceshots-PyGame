@@ -1,4 +1,12 @@
 import numpy as np
+import math
+
+############### Constants ###############
+
+FPS = 60 
+PLANET_DISTANCE_THRESHOLD = 100
+
+########################################
 
 class Velocity:
     
@@ -9,15 +17,45 @@ class Velocity:
     
     def getMag(self):
         return (self.x ** 2 + self.y ** 2) ** 0.5
+
+class Force:
+    
+    def __init__(self, x, y, mag):
+        
+        self.theta = math.atan(y / x)        
+        self.x = mag*math.cos(self.theta)
+        self.y = mag*math.sin(self.theta)
+        self.mag = mag        
+
+class Momentum:
+    
+    def __init__(self, x_vel, y_vel, mass = 1):
+        
+        self.x = mass * x_vel
+        self.y = mass * y_vel
+    
+    @classmethod
+    def fromImpulse(cls, force = Force, duration = float):
+        
+        x = force.x * duration
+        y = force.y * duration
+        
+        return cls(x, y)
+
+    def __add__(self, new):
+        
+        self.x += new.x
+        self.y += new.y
+        
+        return self 
     
 class Orbit:
     
-    def __init__(self, a, b, center_x, center_y, angular_step = 0.017, progress = 0.0):
+    def __init__(self, a, b, center_x, center_y, progress = 0.0):
         self.a = a
         self.b = b
         self.center_x = center_x
         self.center_y = center_y
-        self.angular_step = angular_step
         self.progress = progress
         
     def x(self, progress):
@@ -26,7 +64,11 @@ class Orbit:
     def y(self, progress):
         return self.b * np.sin(progress) + self.center_y
     
-    def nextPos(self):
-        self.progress += self.angular_step
+    def nextPos(self, angular_step):
+        self.progress += angular_step
+        return self.x(self.progress), self.y(self.progress)
+
+    def resetPos(self):
+        self.progress = 0
         return self.x(self.progress), self.y(self.progress)
         
