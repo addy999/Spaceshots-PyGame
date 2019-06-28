@@ -4,7 +4,7 @@ import math
 ############### Constants ###############
 
 FPS = 60 
-PLANET_DISTANCE_THRESHOLD = 100
+PLANET_DISTANCE_THRESHOLD = 100000
 
 ########################################
 
@@ -18,14 +18,23 @@ class Velocity:
     def getMag(self):
         return (self.x ** 2 + self.y ** 2) ** 0.5
 
+    def __repr__(self):
+        
+        return str((self.x, self.y))
+
 class Force:
     
-    def __init__(self, x, y, mag):
+    def __init__(self, x_vector, y_vector, mag):
         
-        self.theta = math.atan(y / x)        
-        self.x = mag*math.cos(self.theta)
-        self.y = mag*math.sin(self.theta)
-        self.mag = mag        
+        hyp = (x_vector ** 2 + y_vector ** 2) ** 0.5
+        ratio = mag / hyp
+        self.x = x_vector * ratio
+        self.y = y_vector * ratio
+        self.mag = mag  
+    
+    def __repr__(self):  
+         
+        return str((self.x, self.y))      
 
 class Momentum:
     
@@ -48,6 +57,10 @@ class Momentum:
         self.y += new.y
         
         return self 
+
+    def __repr__(self):
+        
+        return str((self.x, self.y))
     
 class Orbit:
     
