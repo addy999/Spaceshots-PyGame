@@ -58,21 +58,15 @@ class Asset:
               
 class Planet(Asset):
     
-    def __init__(self, name, x  = 0.0, y = 0.0, mass = 0.0, orbit = Orbit, orbit_period = 30.0):
+    def __init__(self, name, x  = 0.0, y = 0.0, mass = 0.0, orbit = Orbit):
     
         super().__init__(name, x, y, mass)
         self.g = 6.67408e-11 # m^3/kg*s^2
         self.orbit = orbit
-        self.orbit_period = orbit_period
-        self.angular_step = self.__getAngularStep()
-    
-    def __getAngularStep(self):
-        
-        return 2*np.pi / (self.orbit_period * FPS)
             
     def move(self):
         
-        self.x, self.y = self.orbit.nextPos(self.angular_step)
+        self.x, self.y = self.orbit.nextPos()
 
 class Spacecraft(Asset):
     
@@ -83,6 +77,7 @@ class Spacecraft(Asset):
         self.thrust = False
         self.thrust_direction = '-y' # +/-x,-y
         self.thrust_mag = thrust_force
+        self._brakes = False
     
     def findClosestPlanet(self, planets):
         
@@ -90,10 +85,10 @@ class Spacecraft(Asset):
         index_of_closest = 0
         current_index = 0
         for num in range(len(planets)):
-            current_index += 1
             if self.calcDistance(planets[current_index]) < current_distance: 
                 index_of_closest = current_index
                 current_distance = self.calcDistance(planets[current_index])
+            current_index += 1
         
         if current_distance < PLANET_DISTANCE_THRESHOLD:
             return planets[index_of_closest]
@@ -102,7 +97,14 @@ class Spacecraft(Asset):
     
     def getThrustImpulse(self):
         
+        if self.gas_level <= 0.0:
+            self.gas_level = 0.0
+            self.thrust = False
+        
         if self.thrust:
+            
+            self.gas_level -= self.thrust_mag / 100
+            
             if self.thrust_direction == '-y':
                 force = Force(0.0, -1.0, self.thrust_mag)
                 return Momentum.fromImpulse(force, 1/FPS)
@@ -137,15 +139,25 @@ class Spacecraft(Asset):
     
     def move(self):
         
-        delta_time = 1/FPS
-        self.x += self.vel.x * delta_time
-        self.y += self.vel.y * delta_time
+        if not self.brakes:
+            delta_time = 1/FPS
+            self.x += self.vel.x * delta_time
+            self.y += self.vel.y * delta_time
     
     def refresh(self, planets = None):
         
         self.updateMomentum(planets)
         self.move()    
-    
+   
+    @property
+    def brakes(self):
+        return self._brakes
+
+    @brakes.setter
+    def brakes(self, val):
+        self._brakes = val
+        self.vel = Velocity(0.0, 0.0)
+        self.thrust = False
     
     # def calculateDirectionalVelocity(self, system_momentum_const, current_total_planetary_momentum, closest_planet_impulse, thrust_impulse):
 
