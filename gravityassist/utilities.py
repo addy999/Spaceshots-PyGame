@@ -64,12 +64,15 @@ class Momentum:
     
 class Orbit:
     
-    def __init__(self, a, b, center_x, center_y, progress = 0.0):
+    def __init__(self, a, b, center_x, center_y, progress = 0.0, CW = True, orbit_period = 30.0):
         self.a = a
         self.b = b
         self.center_x = center_x
         self.center_y = center_y
         self.progress = progress
+        self.cw = CW
+        self.orbit_period = orbit_period
+        self.angular_step = self.__getAngularStep()
         
     def x(self, progress):
         return self.a * np.cos(progress) + self.center_x
@@ -77,8 +80,15 @@ class Orbit:
     def y(self, progress):
         return self.b * np.sin(progress) + self.center_y
     
-    def nextPos(self, angular_step):
-        self.progress += angular_step
+    def __getAngularStep(self):
+        return 2*np.pi / (self.orbit_period * FPS)
+    
+    def nextPos(self):
+        if self.cw:
+            self.progress += self.angular_step
+        else:
+            self.progress -= self.angular_step
+            
         return self.x(self.progress), self.y(self.progress)
 
     def resetPos(self):
