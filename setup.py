@@ -2,12 +2,12 @@ import os,sys
 from setuptools import setup
 
 # For regular package imports, not 'import .packagename'
-modpath = os.path.abspath(os.path.split(sys.argv[0])[0]) + '/cosmicboost'
+modpath = os.path.abspath(os.path.split(sys.argv[0])[0]) + '/astron'
 sys.path.append(modpath)
-import cosmicboost
+import astron
 
-setup(name=cosmicboost.__name__,
-      version=cosmicboost.__version__,
+setup(name=astron.__name__,
+      version=astron.__version__,
       description='...',
       url='...',
       author='...',
