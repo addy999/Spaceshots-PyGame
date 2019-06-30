@@ -90,10 +90,7 @@ class Spacecraft(Asset):
                 current_distance = self.calcDistance(planets[current_index])
             current_index += 1
         
-        if current_distance < PLANET_DISTANCE_THRESHOLD:
-            return planets[index_of_closest]
-        else:
-            return None
+        return planets[index_of_closest]
     
     def getThrustImpulse(self):
         
@@ -103,7 +100,7 @@ class Spacecraft(Asset):
         
         if self.thrust:
             
-            self.gas_level -= self.thrust_mag / 100
+            self.gas_level -= self.thrust_mag / 1000
             
             if self.thrust_direction == '-y':
                 force = Force(0.0, -1.0, self.thrust_mag)
