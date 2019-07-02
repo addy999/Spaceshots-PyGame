@@ -10,7 +10,7 @@ pygame.font.init()
 
 # Setup screen
 screen_x, screen_y = 500, 500
-screen = pygame.display.set_mode((screen_x, screen_y), pygame.FULLSCREEN)
+screen = pygame.display.set_mode((screen_x, screen_y))
 font = pygame.font.SysFont('Helvetica Neue', 30)
 win_region_x = (0.0, 0.0)
 win_region_y = (0.0, 100.0)
@@ -18,13 +18,17 @@ won = False
 min_speed = 190.0
 
 # background
-stars = pygame.image.load(r'C:\Users\addym\Documents\Gravity Assists\astron\stars_1.jpg')
+stars = pygame.image.load(r'C:\Users\addym\Documents\Gravity Assists\astron\images\stars_1.jpg')
 stars_scaled = pygame.transform.scale(stars, (screen_x, screen_y))
 rect = stars_scaled.get_rect()
 rect = rect.move((0,0))
 screen.fill((0, 0, 0))
 # screen.blit(stars_scaled, (0,0))
 screen.blit(stars_scaled, rect)
+
+# sc
+sc_sprite= pygame.image.load(r'C:\Users\addym\Documents\Gravity Assists\astron\images\ship1.png')
+sc_sprite = pygame.transform.scale(sc_sprite, (50,50))
 
 # Utilities 
 done = False
@@ -118,8 +122,14 @@ while not done:
         #                         [sc.x, sc.y]+np.matmul([20,35/2+5], vel_matrix),
         #                         ])
         vel = 50 * unit_vector((sc.vel.x, sc.vel.y))
-        pygame.draw.line(screen, (0.0, 255, 174), tip, tip+vel, 2)
-        pygame.draw.line(screen, (255,255,255), tip, tip-vel, 15)
+        # pygame.draw.line(screen, (0.0, 255, 174), tip, tip+vel, 2)
+        # pygame.draw.line(screen, (255,255,255), tip, tip-vel, 15)
+        
+        sc_rot = pygame.transform.rotate(sc_sprite, math.degrees(sc.vel.getTheta())+90)
+        sc_rect = sc_rot.get_rect()
+        sc_rect = sc_rect.move((sc.x-sc_rect.centerx, sc.y-sc_rect.centery))
+        screen.blit(sc_rot, sc_rect)
+        
                  
         # Update screen
         text_surface = font.render(str(sc.gas_level), True, (255,255,255))

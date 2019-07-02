@@ -71,7 +71,7 @@ class Planet(Asset):
 
 class Spacecraft(Asset):
     
-    def __init__(self, name, starting_x = 0.0, starting_y = 0.0, mass = 0.0, gas_level = 0.0, thrust_force = 0.0):
+    def __init__(self, name, starting_x = 0.0, starting_y = 0.0, mass = 0.0, gas_level = 0.0, thrust_force = 0.0, sprite_path = None):
         
         super().__init__(name, starting_x, starting_y, mass)
         self.gas_level = gas_level
@@ -79,6 +79,7 @@ class Spacecraft(Asset):
         self.thrust_direction = '-y' # +/-x,-y
         self.thrust_mag = thrust_force
         self._brakes = False
+        self.sprite = sprite_path
     
     def bodyTransform(self, vector):
         
