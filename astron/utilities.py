@@ -13,22 +13,27 @@ class Velocity:
         
         self.x = x_vel
         self.y = y_vel
+        self.vec = [self.x, self.y]
         self.rot_matrix = getRotMatrix(self.getTheta())
+        self.mag = (self.x ** 2 + self.y ** 2) ** 0.5
     
     def getTheta(self):
         
-        if self.x != 0.0:
-            return math.atan(self.y / self.x)
-        elif self.y > 0.0:
-            return np.pi/2
-        elif self.y == 0.0:
-            return 0.0
-        elif self.y < 0.0:
-            return np.pi * 1.5
-    
-    def getMag(self):
-        return (self.x ** 2 + self.y ** 2) ** 0.5
+        # if self.x != 0.0:
+        #     angle =  math.atan(self.y / self.x) 
+        # elif self.y > 0.0:
+        #     angle =  np.pi/2
+        # elif self.y == 0.0:
+        #     angle = 0.0
+        # elif self.y < 0.0:
+        #     angle = np.pi * 1.5
 
+        angle = angleBetween([1,0], self.vec)
+        if self.y < 0:
+            angle += np.pi
+        
+        return angle
+    
     def __repr__(self):
         return str((self.x, self.y))
 
@@ -37,7 +42,12 @@ class Force:
     def __init__(self, x_vector, y_vector, mag):
         
         hyp = (x_vector ** 2 + y_vector ** 2) ** 0.5
-        ratio = mag / hyp
+        if hyp != 0.0:
+            ratio = mag / hyp
+        else:
+            ratio = 0.0
+            mag = 0.0
+            
         self.x = x_vector * ratio
         self.y = y_vector * ratio
         self.mag = mag  
@@ -106,8 +116,12 @@ class Orbit:
         return self.x(self.progress), self.y(self.progress)
  
 def unit_vector(vector):
+    
     """ Returns the unit vector of the vector.  """
-    return vector / np.linalg.norm(vector)
+    if np.linalg.norm(vector) > 0:
+        return vector / np.linalg.norm(vector)
+    else:
+        return np.array([0.0, 0.0])
         
 def getRotMatrix(theta):
     
@@ -115,3 +129,17 @@ def getRotMatrix(theta):
         [math.cos(theta), -math.sin(theta)],
         [math.sin(theta), math.cos(theta)]
     ]
+
+def angleBetween(v1, v2):
+    """ Returns the angle in degrees between vectors 'v1' and 'v2'::
+
+            >>> angle_between((1, 0, 0), (0, 1, 0))
+            1.5707963267948966
+            >>> angle_between((1, 0, 0), (1, 0, 0))
+            0.0
+            >>> angle_between((1, 0, 0), (-1, 0, 0))
+            3.141592653589793
+    """
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
