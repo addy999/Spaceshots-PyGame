@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 sys.path.append('./')
 from utilities import *
 
@@ -79,6 +80,12 @@ class Spacecraft(Asset):
         self.thrust_mag = thrust_force
         self._brakes = False
     
+    def bodyTransform(self, vector):
+        
+        ''' Body pointing towards self.vel '''
+        
+        return np.matmul(self.vel.rot_matrix, vector)
+    
     def findClosestPlanet(self, planets):
         
         current_distance = self.calcDistance(planets[0])
@@ -102,18 +109,26 @@ class Spacecraft(Asset):
             
             self.gas_level -= self.thrust_mag / 1000
             
+            vel_vec = self.vel.vec
+            if np.linalg.norm(self.vel.vec) == 0.0:
+                vel_vec = [0,-1]                
+            
             if self.thrust_direction == '-y':
-                force = Force(0.0, -1.0, self.thrust_mag)
-                return Momentum.fromImpulse(force, 1/FPS)
+                # vec = [0,-1]
+                vector = vel_vec
             elif self.thrust_direction == '+y':
-                force = Force(0.0, 1.0, self.thrust_mag)
-                return Momentum.fromImpulse(force, 1/FPS)
+                # vec = [0,1]
+                vector = np.matmul(getRotMatrix(np.pi), vel_vec)
             elif self.thrust_direction == '-x':
-                force = Force(1.0, 0.0, self.thrust_mag)
-                return Momentum.fromImpulse(force, 1/FPS)
+                # vec = [1,0]
+                vector = np.matmul(getRotMatrix(np.pi/2), vel_vec)
             elif self.thrust_direction == '+x':
-                force = Force(-1.0, 0.0, self.thrust_mag)
-                return Momentum.fromImpulse(force, 1/FPS)
+                # vec = [-1,0]
+                vector = np.matmul(getRotMatrix(np.pi * 1.5), vel_vec)
+                
+            force = Force(vector[0], vector[1], self.thrust_mag)
+            # print(math.degrees(angleBetween(self.vel.vec, [force.x,force.y])))  
+            return Momentum.fromImpulse(force, 1/FPS)
         
         return Momentum(0.0, 0.0)
     
