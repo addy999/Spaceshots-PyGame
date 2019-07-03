@@ -1,7 +1,10 @@
 import sys
 import numpy as np
+import pygame
 sys.path.append('./')
 from utilities import *
+
+DEFAULT_SC_SPRITE = r'./images/ship1.png'
 
 class Asset:
     
@@ -68,6 +71,34 @@ class Planet(Asset):
     def move(self):
         
         self.x, self.y = self.orbit.nextPos()
+
+class Sprite:
+    
+    def __init__(self, image_path = DEFAULT_SC_SPRITE, size = (50, 50), thruster_color = (0, 157, 255)):
+        
+        self.image_path = image_path
+        self.size = size
+        self.thruster_color = thruster_color
+        
+        self.image = pygame.image.load(image_path)
+        self.sprite = pygame.transform.scale(self.image, self.size)
+    
+    def transform(self, x, y, theta_degrees):
+        
+        ''' Return PyGame Image + Rectangle objects for scree.blit onto screen. '''
+        
+        sc_rot = pygame.transform.rotate(self.sprite, theta_degrees)
+        sc_rect = sc_rot.get_rect()
+        sc_rect = sc_rect.move((x-sc_rect.centerx, y-sc_rect.centery))
+        
+        return sc_rot, sc_rect 
+    
+    def render(self, x,y, theta_degrees, thrust_direction = None):
+    
+        sc_rot, sc_rect = self.transform(x, y, theta_degrees)
+        
+        
+        
 
 class Spacecraft(Asset):
     
@@ -179,5 +210,5 @@ class Spacecraft(Asset):
     # def getPos(self, time):
     #     return (self.trajectory.x(time), self.trajectory.y(time))       
         
-        
+       
         
