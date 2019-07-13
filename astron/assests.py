@@ -1,6 +1,7 @@
 import sys, os
 import numpy as np
 import pygame
+import math
 sys.path.append('./')
 from utilities import *
 
@@ -75,25 +76,23 @@ class Planet(Asset):
 class Sprite:
     
     def __init__(self, image_path = DEFAULT_SC_SPRITE, size = (50, 50), thruster_color = (0, 157, 255)):
-        
-        self.image_path = image_path
+    
         self.size = size
         self.thruster_color = thruster_color
-        
         self.image = pygame.image.load(image_path)
-        self.sprite = pygame.transform.scale(self.image, self.size)
     
-    def transform(self, x, y, theta_degrees):
+    def transform(self, x, y, radians):
         
         ''' Return PyGame Image + Rectangle objects for scree.blit onto screen. '''
         
-        sc_rot = pygame.transform.rotate(self.sprite, theta_degrees)
+        sc_rot = pygame.transform.rotate(pygame.transform.scale(self.image, self.size), math.degrees(radians))
         sc_rect = sc_rot.get_rect()
         sc_rect = sc_rect.move((x-sc_rect.centerx, y-sc_rect.centery))
         
-        return sc_rot, sc_rect 
+        self.sprite = sc_rot
+        self.rect = sc_rect 
     
-    def render(self, x,y, theta_degrees, thrust_direction = None):
+    def _render(self, x,y, theta_degrees, thrust_direction = None):
     
         sc_rot, sc_rect = self.transform(x, y, theta_degrees)
         
@@ -106,7 +105,6 @@ class Spacecraft(Asset):
         self.thrust = False
         self.thrust_direction = '-y' # +/-x,-y
         self.thrust_mag = thrust_force
-        self._brakes = False
         self.sprite = sprite
         
         # Load default if none given
@@ -118,21 +116,8 @@ class Spacecraft(Asset):
         ''' Body pointing towards self.vel '''
         
         return np.matmul(self.vel.rot_matrix, vector)
-    
-    def findClosestPlanet(self, planets):
-        
-        current_distance = self.calcDistance(planets[0])
-        index_of_closest = 0
-        current_index = 0
-        for num in range(len(planets)):
-            if self.calcDistance(planets[current_index]) < current_distance: 
-                index_of_closest = current_index
-                current_distance = self.calcDistance(planets[current_index])
-            current_index += 1
-        
-        return planets[index_of_closest]
-    
-    def getThrustImpulse(self):
+       
+    def getThrustImpulse(self, time):
         
         if self.gas_level <= 0.0:
             self.gas_level = 0.0
@@ -161,55 +146,37 @@ class Spacecraft(Asset):
                 
             force = Force(vector[0], vector[1], self.thrust_mag)
             # print(math.degrees(angleBetween(self.vel.vec, [force.x,force.y])))  
-            return Momentum.fromImpulse(force, 1/FPS)
+            return Momentum.fromImpulse(force, time)
         
         return Momentum(0.0, 0.0)
     
-    def updateMomentum(self, planets = None):
+    def setNetMomentum(self, impulse_time, external_force = None):
         
         # Thrust impulse
-        thrust_i = self.getThrustImpulse()
+        thrust_i = self.getThrustImpulse(impulse_time)
         
-        # Planet impulse
-        planet_i = Momentum(0.0, 0.0)
-        if planets:
-            closes_planet = self.findClosestPlanet(planets)
-            if closes_planet:
-                planet_f = self.calcGravitationalForce(closes_planet)
-                planet_i = Momentum.fromImpulse(planet_f, 1/FPS) 
+        # External impulse
+        if external_force:
+            external_i = Momentum.fromImpulse(external_force, impulse_time) 
+        else:
+            external_i = Momentum(0.0, 0.0)
         
-        # print('Thrust', thrust_i)
-        # print('Planet', planet_i)
-        self.p = self.p + thrust_i + planet_i       
+        self.p = self.p + thrust_i + external_i       
     
-    def move(self):
+    def move(self, time):
         
-        if not self.brakes:
-            delta_time = 1/FPS
-            self.x += self.vel.x * delta_time
-            self.y += self.vel.y * delta_time
-    
-    def refresh(self, planets = None):
-        
-        self.updateMomentum(planets)
-        self.move()    
-   
+        self.x += self.vel.x * time
+        self.y += self.vel.y * time
+               
     @property
-    def brakes(self):
-        return self._brakes
+    def p(self):
+        return self._p
 
-    @brakes.setter
-    def brakes(self, val):
-        self._brakes = val
-        self.vel = Velocity(0.0, 0.0)
-        self.thrust = False
-    
-    # def calculateDirectionalVelocity(self, system_momentum_const, current_total_planetary_momentum, closest_planet_impulse, thrust_impulse):
-
-    #     return (system_momentum_const - current_total_planetary_momentum + closest_planet_impulse + thrust_impulse) / self.mass
-    
-    # def getPos(self, time):
-    #     return (self.trajectory.x(time), self.trajectory.y(time))       
+    @p.setter
+    def p(self, val):
+        self._p = val
+        self.vel = Velocity(val.x / self.mass, val.y / self.mass)
+        # self.sprite.transform(self.x, self.y, self.vel.theta)
         
        
         
