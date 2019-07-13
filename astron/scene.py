@@ -5,42 +5,49 @@ sys.path.append('./')
 from assests import *
 from utilities import *
 
-
-class Scene:
+class Scenario:
     
-    def __init__(self, 
-                 spacecraft, 
-                 planets, 
-                 initial_map = {}, 
-                 win_region, 
-                 win_velocity, 
-                 background = None # Image path / color tuple
-                ):
+    def __init__(self, size, spacecraft, planets, sc_start_pos = None, initial_orbit_progress = None):
         
+        self.size = size
         self.sc = spacecraft
         self.planets = planets
-        self.win_region = win_region
-        self.win_min_velocity = win_velocity
+        self.sc_start_pos = sc_start_pos
+        self.initial_orbit_progress = initial_orbit_progress
         
+        if not self.sc_start_pos:
+            self.sc_start_pos = self._makeScStartPos()
+        if not self.initial_orbit_progress:
+            self.initial_orbit_progress = {}
+            for planet in planets:
+                self.initial_orbit_progress.update({
+                    planet : 0.0
+                })
+                
         self.resetPos()
         
-    def resetPos(self, initial_map):
+    def _makeScStartPos(self):
         
+        '''
+        Default starting position assumed to be bottom centre of screen
+        '''
         
-
-class Game:
+        return self.size[0] / 2, self.size[2]
+        
+    def resetPos(self):
+        
+        self.sc.x, self.sc.y = self.sc_start_pos
+        
+        for planet in self.planets:
+            self.planets[self.planets.index(planet)].orbit.progress = self.initial_orbit_progress[planet]
     
-    def __init__(self, resolution, fullscreen = False, font = ('Helvetica Neue', 30), fps = 60.0):
+    def updateScPos(self, impulse_time):
         
-        pygame.init()
-        pygame.font.init()
+        closes_planet = findClosestPlanet(self.sc, self.planets)
+        planet_f = 0.0
         
-        
-        
-        
-        # Start screen
-        if fullscreen:
-            self.screen = pygame.display.set_mode((resolution[0], resolution[1]), pygame.FULLSCREEN)
-        else:
-            self.screen = pygame.display.set_mode((resolution[0], resolution[1]))
-        
+        if closes_planet:
+            planet_f = self.sc.calcGravitationalForce(closes_planet)
+                
+        self.sc.setNetMomentum(impulse_time, planet_f)
+        self.sc.move()
