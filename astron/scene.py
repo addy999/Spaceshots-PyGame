@@ -51,3 +51,16 @@ class Scenario:
                 
         self.sc.setNetMomentum(impulse_time, planet_f)
         self.sc.move()
+    
+def findClosestPlanet(sc, planets):
+        
+    current_distance = sc.calcDistance(planets[0])
+    index_of_closest = 0
+    current_index = 0
+    for num in range(len(planets)):
+        if sc.calcDistance(planets[current_index]) < current_distance: 
+            index_of_closest = current_index
+            current_distance = sc.calcDistance(planets[current_index])
+        current_index += 1
+    
+    return planets[index_of_closest]
