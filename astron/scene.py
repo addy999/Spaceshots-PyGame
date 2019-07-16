@@ -7,22 +7,21 @@ from utilities import *
 
 class Scenario:
     
-    def __init__(self, size, spacecraft, planets, sc_start_pos = None, initial_orbit_progress = None):
+    def __init__(self, size, spacecraft, planets, sc_start_pos = None):
         
         self.size = size
         self.sc = spacecraft
         self.planets = planets
         self.sc_start_pos = sc_start_pos
-        self.initial_orbit_progress = initial_orbit_progress
         
         if not self.sc_start_pos:
             self.sc_start_pos = self._makeScStartPos()
-        if not self.initial_orbit_progress:
-            self.initial_orbit_progress = {}
-            for planet in planets:
-                self.initial_orbit_progress.update({
-                    planet : 0.0
-                })
+        
+        self.initial_orbit_progress = {}
+        for planet in planets:
+            self.initial_orbit_progress.update({
+                planet : planet.orbit.progress
+            })
                 
         self.resetPos()
         
@@ -36,10 +35,10 @@ class Scenario:
         
     def resetPos(self):
         
-        self.sc.x, self.sc.y = self.sc_start_pos
+        self.sc.reset(self.sc_start_pos)
         
         for planet in self.planets:
-            self.planets[self.planets.index(planet)].orbit.progress = self.initial_orbit_progress[planet]
+            planet.orbit.progress = self.initial_orbit_progress[planet]
     
     def updateScPos(self, impulse_time):
         
