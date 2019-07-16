@@ -37,10 +37,6 @@ color = (0, 128, 255)
 
 # Assets
 sc = Spacecraft('Test', 225, 450, 100, thrust_force = 3000, gas_level = 1000)
-orbit = Orbit(100, 300, 0, screen_y, CW=False, orbit_period = 100.0, progress = -np.pi/8)
-orbit2 = Orbit(100, 300, screen_x, screen_y/2, CW=True, orbit_period = 80.0, progress = np.pi*0.8)
-planet = Planet('Test', mass = 1e16, orbit = orbit)
-planet2 = Planet('Test2', mass = 2e16, orbit = orbit2)
 
 orbit3 = Orbit(300, 100, screen_x*0.75, screen_y*0.3, CW=True, orbit_period = 80.0, progress = np.pi/2)
 planet3 = Planet('Test', mass = 2e16, orbit = orbit3)
@@ -129,7 +125,6 @@ while not done:
         sc_rect = sc_rot.get_rect()
         sc_rect = sc_rect.move((sc.x-sc_rect.centerx, sc.y-sc_rect.centery))
         screen.blit(sc_rot, sc_rect)
-        
                  
         # Update screen
         text_surface = font.render('Gas: ' + str(sc.gas_level), True, (255,255,255))
