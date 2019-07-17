@@ -3,6 +3,7 @@ import os, sys
 import math
 import numpy as np
 import time
+import ctypes
 
 sys.path.append('./')
 from assests import *
@@ -42,22 +43,32 @@ class Game:
         self.scenes = scenes
         self.screen = None # current screen
         self.current_scene = self.scenes[0]
+        self._bg_loaded = False
+    
+    def loadImage(self, path, size):
+        
+        img = pygame.image.load(path)
+        img_scaled = pygame.transform.scale(img, size)
+        rectangle = img_scaled.get_rect()
+        rectangle = rectangle.move((0,0))
+        
+        return img_scaled, rectangle
     
     def renderBackground(self, scene):
         
         ''' Render background of scene on current game screen '''
-        
+              
         if scene.background:
-            if isinstance(scene.background, list) and list(scene.background) == 3:
-                # RGB Value
+            if (isinstance(scene.background, list) or isinstance(scene.background, tuple)) and len(scene.background) == 3:
+                # RGB Value given
                 self.screen.fill(scene.background)
             else:
-                # Image path
-                img = pygame.image.load(scene.background)
-                img_scaled = pygame.transform.scale(img, scene.size)
-                rectangle = img_scaled.get_rect()
-                rectangle = rectangle.move((0,0))
-                self.screen.blit(img_scaled, rectangle)
+                # Image path given
+                if not self._bg_loaded:
+                    self._bg_img, self._bg_rect = self.loadImage(scene.background, scene.size)                  
+                
+                self.screen.blit(self._bg_img, self._bg_rect)   
+                  
         else:
             # Default: lack screen
             self.screen.fill((0,0,0))
@@ -81,7 +92,12 @@ class Game:
             scene = self.current_scene
         
         if self.fullscreen:
+            
+            # Only windows!
+            
+            ctypes.windll.user32.SetProcessDPIAware()
             self.screen = pygame.display.set_mode((scene.size[0], scene.size[1]), pygame.FULLSCREEN)
+            
         else:
             self.screen = pygame.display.set_mode((scene.size[0], scene.size[1]))
     
@@ -99,7 +115,6 @@ class Game:
         '''
         
         if pygame.display.get_surface().get_size() != scene.size:
-            print(pygame.display.get_surface().get_size())
             self.createScreen(scene)
             
         # background
@@ -121,10 +136,17 @@ class Game:
         
         sc = self.current_scene.sc
         
+        # Gas level
         text_surface = self.font.render('Gas: ' + str(sc.gas_level), True, (255,255,255))
         self.screen.blit(text_surface, (scene.size[0]-100, scene.size[1]-60))
+        
+        # Velocity
         text_surface = self.font.render('Velocity: ' + str(round(sc.vel.mag,2)), True, (255,255,255))
         self.screen.blit( text_surface, (scene.size[0]-145, scene.size[1]-20))
+        
+        # Escape velocity needed
+        text_surface = self.font.render('Velocity Required: ' + str(round(self.current_scene.win_min_velocity, 2)), True, (255,255,255))
+        self.screen.blit(text_surface, (0.0, scene.size[1]-20))
     
     def captureSpacecraftControls(self, event):
             
@@ -197,16 +219,16 @@ class Game:
         
         if won:
             
-            self.renderFullscreenDialog('You\'re a gravity assist pro :D', xoffset= center_x - 400)
+            self.renderFullscreenDialog('You\'re a gravity assist pro :D', xoffset= center_x -  400)
         
         else:
             
-            self.renderFullscreenDialog('No worries, see ya next time!', xoffset = center_x - 400)
+            self.renderFullscreenDialog('No worries, see ya next time!', xoffset = center_x - 425)
     
     def startGame(self, scene_to_start_at = None):
         
         self.createScreen(scene_to_start_at)
-        refresh_rate = 1 / self.fps
+        dt = 1 / self.fps
         
         done = False        
         while not done:
@@ -219,11 +241,10 @@ class Game:
                 self.captureSpacecraftControls(event)
                         
             # Iterate next planetary + sc positions
-            self.current_scene.updateAllPos(refresh_rate)
+            self.current_scene.updateAllPos(dt)
                 
             # Check exit conditions
             won, failed = self.checkSceneWin(self.current_scene)
-            
             if won:
                 self.renderFullscreenDialog('Won!', xoffset=-10)
                 self.current_scene, done = self.nextScene(done)
@@ -231,11 +252,13 @@ class Game:
                 self.renderFullscreenDialog('Oops, try again!', xoffset=-75)
                 self.current_scene.resetPos()
             
+            if won or failed: self._bg_img, self._bg_rect = None, None
+            
             if not done:
                 # Draw modified scene            
                 self.renderScene(self.current_scene)
-                pygame.display.flip()
-                self.clock.tick(self.fps)
+                pygame.display.update()
+                dt = self.clock.tick(self.fps) / 1000
 
         self.renderFinalMessage(won, failed)
         pygame.quit()
