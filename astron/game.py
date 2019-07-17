@@ -209,7 +209,7 @@ class Game:
         
         return won, failed
     
-    def renderFullscreenDialog(self, texts, xoffsets = [], yoffsets = []):
+    def renderFullscreenDialog(self, texts, xoffsets = [], yoffsets = [], sleep_time = 1.5):
         
         screen_x = self.current_scene.size[0]
         screen_y = self.current_scene.size[1]
@@ -228,7 +228,7 @@ class Game:
             
         pygame.display.update()
         
-        time.sleep(1.5)
+        time.sleep(sleep_time)
         
     def nextScene(self, done):
         
@@ -273,8 +273,13 @@ class Game:
     def startGame(self, scene_to_start_at = None):
         
         self.createScreen(scene_to_start_at)
-        dt = 1 / self.fps
+        self.renderFullscreenDialog([
+            'ASTRON', 
+            'Use arrow keys to get to the green region with the required velocity!'
+                                    
+        ], xoffsets = [-50, -300.0], yoffsets = [0, 100], sleep_time= 5)
         
+        dt = 1 / self.fps
         done = False        
         while not done:
             
