@@ -5,10 +5,12 @@ import numpy as np
 import time
 import ctypes
 
-sys.path.append('./')
-from assests import *
-from scene import *
-from utilities import *
+modpath = os.path.abspath(os.path.split(sys.argv[0])[0])
+sys.path.append(modpath)
+
+from .assests import *
+from .scene import *
+from .utilities import *
 
 class GameScene(Scenario):
     
@@ -29,6 +31,7 @@ class GameScene(Scenario):
         self.win_min_velocity = win_velocity
         self.win_region_color = win_region_color
         self._attempts = 0
+        self._won = False
         
 class Game:
     
@@ -40,12 +43,25 @@ class Game:
         self.clock = pygame.time.Clock()
         self.fullscreen = fullscreen
         self.fps = fps
+        self.last_dt = 1 / fps
+        self.current_dt = 1 / fps
         self.font = pygame.font.SysFont(font, font_size)
         self.scenes = scenes
         self.screen = None # current screen
+        self.extra_time = 0.0
         self.current_scene = self.scenes[0]
         self._bg_loaded = False
         self.__rpk = 45 / 4e16 # radius per kilogram of planet
+        self._done = False        
+        
+        for scene in self.scenes:
+            scene._attempts = 0
+            scene._won = False
+    
+    def wait(self, time_in_seconds):
+        
+        time.sleep(time_in_seconds)
+        self.extra_time = time_in_seconds    
     
     def loadImage(self, path, size):
         
@@ -87,7 +103,7 @@ class Game:
     
     def renderWinRegion(self, scene):
         
-        pygame.draw.line(self.screen, scene.win_region_color, (scene.win_region[0][0], scene.win_region[0][1]), (scene.win_region[1][0], scene.win_region[1][1]), 15)
+        pygame.draw.line(self.screen, scene.win_region_color, (scene.win_region[0][0], scene.win_region[0][1]), (scene.win_region[1][0], scene.win_region[1][1]), 25)
     
     def createScreen(self, scene = None):
         
@@ -123,8 +139,8 @@ class Game:
         Render scene onto game screen
         '''
         
-        if pygame.display.get_surface().get_size() != scene.size:
-            self.createScreen(scene)
+        # if pygame.display.get_surface().get_size() != scene.size:
+        #     self.createScreen(scene)
             
         # background
         self.renderBackground(scene)
@@ -147,7 +163,7 @@ class Game:
         
         # Gas level
         text_surface = self.font.render('Gas: ' + str(sc.gas_level), True, (255,255,255))
-        self.screen.blit(text_surface, (scene.size[0]-100, scene.size[1]-60))
+        self.screen.blit(text_surface, (scene.size[0]-110, scene.size[1]-60))
         
         # Velocity
         text_surface = self.font.render('Velocity: ' + str(round(sc.vel.mag,2)), True, (255,255,255))
@@ -159,7 +175,11 @@ class Game:
         
         # Attempts
         text_surface = self.font.render('Attempts: ' + str(self.current_scene._attempts), True, (255,255,255))
-        self.screen.blit(text_surface, (scene.size[0]-145, 0.0))
+        self.screen.blit(text_surface, (scene.size[0]-150, 10.0))
+        
+        # Level counter
+        text_surface = self.font.render('Level ' + str(self.scenes.index(self.current_scene)+1), True, (255,255,255))
+        self.screen.blit(text_surface, (scene.size[0]-150, 30))
     
     def captureSpacecraftControls(self, event):
             
@@ -181,6 +201,8 @@ class Game:
     def checkSceneWin(self, scene):
         
         sc = self.current_scene.sc
+        screen_x = self.current_scene.size[0]
+        screen_y = self.current_scene.size[0]
         win_region_1 = self.current_scene.win_region[0]
         win_region_2 = self.current_scene.win_region[1]
         
@@ -188,17 +210,28 @@ class Game:
         failed = False
         
         # Win if
-        if win_region_1[0] == 0 and win_region_2[0] == 0:
-            if sc.x <= 0.0  and win_region_1[1] <= sc.y <= win_region_2[1] and sc.vel.mag >= self.current_scene.win_min_velocity:
+        
+        # vertical
+        if win_region_1[0] == win_region_2[0] and win_region_1[0] == 0.0:
+            # left half
+            if sc.x <= 0 and win_region_1[1] <= sc.y <= win_region_2[1] and sc.vel.mag >= self.current_scene.win_min_velocity:
                 won = True
-        elif win_region_1[1] == 0 and win_region_2[1] == 0:
-            if sc.y <= 0.0  and win_region_1[0] <= sc.x <= win_region_2[0] and sc.vel.mag >= self.current_scene.win_min_velocity:
-                won = True 
-        elif win_region_1[0] <= sc.x <= win_region_2[0]  and win_region_1[1] <= sc.y <= win_region_2[1] and sc.vel.mag >= self.current_scene.win_min_velocity:
-            won = True
+        elif win_region_1[0] == win_region_2[0] and win_region_1[0] == screen_x:
+            # right half
+            if sc.x >= screen_x and win_region_1[1] <= sc.y <= win_region_2[1] and sc.vel.mag >= self.current_scene.win_min_velocity:
+                won = True
+        # Horizontal
+        if win_region_1[1] == win_region_2[1] and win_region_1[1] == 0.0:
+            # top half
+            if sc.y <= 0 and win_region_1[0] <= sc.x <= win_region_2[0] and sc.vel.mag >= self.current_scene.win_min_velocity:
+                won = True
+        elif win_region_1[1] == win_region_2[1] and win_region_1[1] == screen_y:
+            # bottom half
+            if sc.y >= screen_y and win_region_1[0] <= sc.x <= win_region_2[0] and sc.vel.mag >= self.current_scene.win_min_velocity:
+                won = True
                 
         # Out of bounds
-        if not 0.0 < sc.x < self.current_scene.size[0] or not 0.0 < sc.y < self.current_scene.size[1]:
+        if not won and (not 0.0 < sc.x < self.current_scene.size[0] or not 0.0 < sc.y < self.current_scene.size[1]):
             failed = True
         
         # Collisions
@@ -228,90 +261,134 @@ class Game:
             
         pygame.display.update()
         
-        time.sleep(sleep_time)
+        self.wait(sleep_time)
+    
+    def playAudio(self, path):
         
-    def nextScene(self, done):
+        pygame.mixer.music.load(path)
+        pygame.mixer.music.play(0)   
+
+    def stopAudio(self):
+        
+        pygame.mixer.music.stop()  
+    
+    def nextScene(self):
         
         current_i = self.scenes.index(self.current_scene)
         
         if current_i < len(self.scenes) - 1:
             self.current_scene  = self.scenes[current_i+1]
-            return self.scenes[current_i+1], done
+            return self.scenes[current_i+1]
         else:
-            return self.current_scene, True
+            self._done = True
+            return self.current_scene
     
-    def renderFinalMessage(self, won, failed):
+    def gameWon(self):
         
         center_x = self.current_scene.size[0] / 2
-        
-        if won:
             
-            self.renderFullscreenDialog([
-                'You\'re a gravity assist pro :D',
-                'Final score: ' + str(self.calcScore())
-                ], 
-                xoffsets = [-100, -50.0], yoffsets = [0, 100])
+        self.playAudio(getModpath() + r'\music\christmas.mp3')
+        self.renderFullscreenDialog([
+            'You\'re a gravity assist pro :D',
+            'Final score: ' + str(self.calcScore())
+            ], 
+            xoffsets = [-100, -50.0], yoffsets = [0, 100], sleep_time = 5.0)
+        self.stopAudio()  
         
-        else:
-            
-            self.renderFullscreenDialog(['No worries, see ya next time!', 
-                                         'Final score: ' + str(self.calcScore())], xoffsets = [-100, -50.0], yoffsets = [0, 100])
+    def gameFail(self):
         
+        self.playAudio(getModpath() + r'\music\Cut_kazoo_full.mp3')
+        center_x = self.current_scene.size[0] / 2 
+        self.renderFullscreenDialog([
+            'No worries, see ya next time!', 
+            'Final score: ' + str(self.calcScore())], 
+            xoffsets = [-100, -50.0], yoffsets = [0, 100],  sleep_time = 5.0)
+        self.stopAudio()  
+        
+    def sceneWin(self):
+        
+        self.playAudio(getModpath() + r'\music\yeet_vine.mp3')        
+        self.renderFullscreenDialog(['Won!'], xoffsets=[-10], sleep_time = 3.5)
+        self.current_scene = self.nextScene() #iterate next scene
+        self.current_scene.resetPos()
+        self.current_scene._attempts += 1
+        self.current_scene.won = True    
+        self.stopAudio()           
+    
+    def sceneFail(self):
+        
+        self.playAudio(getModpath() + r'\music\gottem_vine_cut.mp3')        
+        self.renderFullscreenDialog(['Oops, try again!'], xoffsets=[-75], sleep_time = 3.5)
+        self.current_scene.resetPos()
+        self.current_scene._attempts += 1
+        self.stopAudio()   
+    
     def calcScore(self):
         
         per_scene_score = 100.0
-        attempt_deductions = 25.0
+        attempt_deductions = 10.0
         
         total = 0.0
         
         for scene in self.scenes:
-            if scene._attempts > 1:
-                total += per_scene_score - (scene._attempts-1) * attempt_deductions
+            if scene._won:
+                total += per_scene_score 
+                if scene._attempts > 1:
+                    total -= (scene._attempts-1) * attempt_deductions
+            
+        if total < 0:
+            total = 0.0
             
         return total            
     
-    def startGame(self, scene_to_start_at = None):
+    def startGame(self, scene_to_start_at = None, splash = True):
         
         self.createScreen(scene_to_start_at)
-        self.renderFullscreenDialog([
-            'ASTRON', 
-            'Use arrow keys to get to the green region with the required velocity!'
-                                    
-        ], xoffsets = [-50, -300.0], yoffsets = [0, 100], sleep_time= 5)
+        # time.sleep(0.5)
         
-        dt = 1 / self.fps
-        done = False        
-        while not done:
+        if splash:
+            self.renderFullscreenDialog([
+                'ASTRON', 
+                'Use arrow keys to get to the green region with the required velocity!'
+                                        
+            ], xoffsets = [-50, -300.0], yoffsets = [0, 100], sleep_time= 5)
+
+        self._done = False        
+        while not self._done:
             
             # check game exit conditions
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                        done = True
+                        self._done = True
                     
                 # Modify spacecraft thrusters 
                 self.captureSpacecraftControls(event)
                         
             # Iterate next planetary + sc positions
-            self.current_scene.updateAllPos(dt)
+            self.current_scene.updateAllPos(self.current_dt)
                 
             # Check scene exit conditions
             won, failed = self.checkSceneWin(self.current_scene)
-            if won:
-                self.renderFullscreenDialog(['Won!'], xoffsets=[-10])
-                self.current_scene, done = self.nextScene(done)
-                self.current_scene._attempts += 1
-            elif failed:
-                self.renderFullscreenDialog(['Oops, try again!'], xoffsets=[-75])
-                self.current_scene.resetPos()
-                self.current_scene._attempts += 1
+            if won: self.sceneWin()
+            elif failed: self.sceneFail()
     
-            if not done:
+            if not self._done:
                 # Draw modified scene            
                 self.renderScene(self.current_scene)
                 pygame.display.update()
-                dt = self.clock.tick(self.fps) / 1000
+                self.last_dt = self.current_dt
+                self.current_dt = self.clock.tick(self.fps) / 1000 # to seconds
+                if self.extra_time > 0.0 :
+                    self.current_dt -= self.extra_time
+                    self.extra_time = 0.0
+        
+                # print(self.last_dt, self.current_dt)
 
-        self.renderFinalMessage(won, failed)
+        if won:
+            self.gameWon()
+        else:
+            self.gameFail()
+        
         pygame.quit()
         
           
