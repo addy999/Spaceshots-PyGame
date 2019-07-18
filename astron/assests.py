@@ -2,10 +2,12 @@ import sys, os
 import numpy as np
 import pygame
 import math
-sys.path.append('./')
-from utilities import *
+modpath = os.path.abspath(os.path.split(sys.argv[0])[0])
+sys.path.append(modpath)
 
-DEFAULT_SC_SPRITE = r'./astron/images/ship1.png' 
+from .utilities import *
+
+DEFAULT_SC_SPRITE = getModpath() + r'\images\ship1.png'
 
 class Asset:
     
@@ -209,10 +211,10 @@ class Spacecraft(Asset):
     
     def reset(self, sc_start_pos = None):
         
+        self.thrust = False
         if sc_start_pos:
             self.x, self.y = sc_start_pos
         self.p = Momentum(0.0, 0.0)
-        self.thrust = False
         self.gas_level = self._initial_gas_level
                
     @property
@@ -226,6 +228,8 @@ class Spacecraft(Asset):
         if self.thrust:
             self.sprite.transform(self.x, self.y, self.vel.theta, self.thrust_direction)
         else:
-            self.sprite.transform(self.x, self.y, self.vel.theta)        
+            self.sprite.transform(self.x, self.y, self.vel.theta)     
+        
+        # print(val)   
        
         
