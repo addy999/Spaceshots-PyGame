@@ -3,6 +3,8 @@
 
 ## Installation instructions
 
+*For Python 3*
+
 `pip install astron`
 
 To play the pre made five-level game:
