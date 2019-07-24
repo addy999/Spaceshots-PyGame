@@ -31,7 +31,7 @@ class GameScene(Scenario):
         self.win_min_velocity = win_velocity
         self.win_region_color = win_region_color
         self._attempts = 0
-        self._won = False
+        self.won = False
         
 class Game:
     
@@ -56,7 +56,7 @@ class Game:
         
         for scene in self.scenes:
             scene._attempts = 0
-            scene._won = False
+            scene.won = False
     
     def wait(self, time_in_seconds):
         
@@ -286,22 +286,23 @@ class Game:
     def gameWon(self):
         
         center_x = self.current_scene.size[0] / 2
+        total_score = self.calcScore()
             
         self.playAudio(getModpath() + r'\music\christmas.mp3')
         self.renderFullscreenDialog([
             'You\'re a gravity assist pro :D',
-            'Final score: ' + str(self.calcScore())
-            ], 
+            'Final score: ' + str(total_score)], 
             xoffsets = [-100, -50.0], yoffsets = [0, 100], sleep_time = 5.0)
         self.stopAudio()  
         
     def gameFail(self):
         
-        self.playAudio(getModpath() + r'\music\Cut_kazoo_full.mp3')
+        total_score = self.calcScore()
+        self.playAudio(getModpath() + r'\music\christmas.mp3')
         center_x = self.current_scene.size[0] / 2 
         self.renderFullscreenDialog([
             'No worries, see ya next time!', 
-            'Final score: ' + str(self.calcScore())], 
+            'Final score: ' + str(total_score)], 
             xoffsets = [-100, -50.0], yoffsets = [0, 100],  sleep_time = 5.0)
         self.stopAudio()  
         
@@ -331,7 +332,7 @@ class Game:
         total = 0.0
         
         for scene in self.scenes:
-            if scene._won:
+            if scene.won:
                 total += per_scene_score 
                 if scene._attempts > 1:
                     total -= (scene._attempts-1) * attempt_deductions
@@ -339,6 +340,10 @@ class Game:
         if total < 0:
             total = 0.0
             
+        # print('Winnings', [scene.won for scene in self.scenes])
+        
+        print('Total score', total)
+                
         return total            
     
     def startGame(self, scene_to_start_at = None, splash = True):
@@ -379,6 +384,7 @@ class Game:
                 self.last_dt = self.current_dt
                 self.current_dt = self.clock.tick(self.fps) / 1000 # to seconds
                 if self.extra_time > 0.0 :
+                    # Remove lag so game movements don't skip ahead
                     self.current_dt -= self.extra_time
                     self.extra_time = 0.0
         
@@ -388,7 +394,7 @@ class Game:
             self.gameWon()
         else:
             self.gameFail()
-        
+    
         pygame.quit()
         
           
