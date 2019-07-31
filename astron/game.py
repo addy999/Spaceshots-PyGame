@@ -163,23 +163,23 @@ class Game:
         
         # Gas level
         text_surface = self.font.render('Gas: ' + str(sc.gas_level), True, (255,255,255))
-        self.screen.blit(text_surface, (scene.size[0]-110, scene.size[1]-60))
+        self.screen.blit(text_surface, (0, scene.size[1]-20))
         
         # Velocity
-        text_surface = self.font.render('Velocity: ' + str(round(sc.vel.mag,2)), True, (255,255,255))
-        self.screen.blit( text_surface, (scene.size[0]-145, scene.size[1]-20))
+        text_surface = self.font.render('Speed: ' + str(round(sc.vel.mag,2)), True, (255,255,255))
+        self.screen.blit( text_surface, (scene.size[0]-130, scene.size[1]-50))
         
         # Escape velocity needed
-        text_surface = self.font.render('Velocity Required: ' + str(round(self.current_scene.win_min_velocity, 2)), True, (255,255,255))
-        self.screen.blit(text_surface, (0.0, scene.size[1]-20))
+        text_surface = self.font.render('Speed Required: ' + str(round(self.current_scene.win_min_velocity, 2)), True, (255,255,255))
+        self.screen.blit(text_surface, (scene.size[0]-220, scene.size[1]-20))
         
         # Attempts
         text_surface = self.font.render('Attempts: ' + str(self.current_scene._attempts), True, (255,255,255))
-        self.screen.blit(text_surface, (scene.size[0]-150, 10.0))
+        self.screen.blit(text_surface, (scene.size[0]-130, 10.0))
         
         # Level counter
         text_surface = self.font.render('Level ' + str(self.scenes.index(self.current_scene)+1), True, (255,255,255))
-        self.screen.blit(text_surface, (scene.size[0]-150, 30))
+        self.screen.blit(text_surface, (scene.size[0]-130, 30))
     
     def captureSpacecraftControls(self, event):
             
@@ -265,8 +265,9 @@ class Game:
     
     def playAudio(self, path):
         
-        pygame.mixer.music.load(path)
-        pygame.mixer.music.play(0)   
+        # pygame.mixer.music.load(path)
+        # pygame.mixer.music.play(0)   
+        return None
 
     def stopAudio(self):
         
@@ -286,24 +287,30 @@ class Game:
     def gameWon(self):
         
         center_x = self.current_scene.size[0] / 2
-        total_score = self.calcScore()
+        total_score, gas_bonus = self.calcScore()
             
         self.playAudio(getModpath() + r'\music\christmas.mp3')
         self.renderFullscreenDialog([
             'You\'re a gravity assist pro :D',
-            'Final score: ' + str(total_score)], 
-            xoffsets = [-100, -50.0], yoffsets = [0, 100], sleep_time = 5.0)
+            '.......................',
+            'Final score: ' + str(total_score),
+            'including a gas bonus of ' + str(gas_bonus)
+            ], 
+            xoffsets = [-100, -30.0, -50.0, -100.0], yoffsets = [0, 50, 100, 130], sleep_time = 6.0)
         self.stopAudio()  
         
     def gameFail(self):
         
-        total_score = self.calcScore()
+        total_score, gas_bonus = self.calcScore()
         self.playAudio(getModpath() + r'\music\christmas.mp3')
         center_x = self.current_scene.size[0] / 2 
         self.renderFullscreenDialog([
-            'No worries, see ya next time!', 
-            'Final score: ' + str(total_score)], 
-            xoffsets = [-100, -50.0], yoffsets = [0, 100],  sleep_time = 5.0)
+            'Quit! No worries, see ya next time!', 
+            '.......................',
+            'Final score: ' + str(total_score),
+            'including a gas bonus of ' + str(gas_bonus)
+            ], 
+            xoffsets = [-130, -40.0, -50.0, -100.0], yoffsets = [0, 50, 100, 130],  sleep_time = 6.0)
         self.stopAudio()  
         
     def sceneWin(self):
@@ -327,8 +334,9 @@ class Game:
     def calcScore(self):
         
         per_scene_score = 100.0
-        attempt_deductions = 10.0
-        
+        attempt_deductions = 5.0
+        gas_bonus_score = 10.0
+        gas_bonus = 0.0        
         total = 0.0
         
         for scene in self.scenes:
@@ -336,7 +344,11 @@ class Game:
                 total += per_scene_score 
                 if scene._attempts > 1:
                     total -= (scene._attempts-1) * attempt_deductions
-            
+                if scene._attempts >= 1:
+                    gas_left = scene.sc.gas_level / scene.sc._initial_gas_level
+                    gas_bonus += gas_left * gas_bonus_score
+                    total += gas_bonus            
+        
         if total < 0:
             total = 0.0
             
@@ -344,7 +356,7 @@ class Game:
         
         print('Total score', total)
                 
-        return total            
+        return total, gas_bonus            
     
     def startGame(self, scene_to_start_at = None, splash = True):
         
@@ -354,9 +366,9 @@ class Game:
         if splash:
             self.renderFullscreenDialog([
                 'ASTRON', 
-                'Use arrow keys to get to the green region with the required velocity!'
+                'Use arrow keys (one at a time) to get to the green region with the required speed (bottom right)!'
                                         
-            ], xoffsets = [-50, -300.0], yoffsets = [0, 100], sleep_time= 5)
+            ], xoffsets = [-50, -400.0], yoffsets = [-20, 100], sleep_time= 7)
 
         self._done = False        
         while not self._done:
