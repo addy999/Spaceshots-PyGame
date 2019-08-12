@@ -6,11 +6,11 @@ import pygame
 def getModpath():
     
     np_path = pygame.__file__
-    if os.path.isfile(np_path[:-19] + r'\astron\__init__.py'):
-        return np_path[:-19] + r'\astron'
-    else:
-        modpath = os.path.abspath(os.path.split(sys.argv[0])[0])        
-        return modpath
+    # if os.path.isfile(np_path[:-19] + r'\astron\__init__.py'):
+    return np_path[:-19] + r'\astron'
+    # else:
+    #     modpath = os.path.abspath(os.path.split(sys.argv[0])[0])        
+    #     return modpath
 
 class Velocity:
     
