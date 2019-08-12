@@ -2,21 +2,15 @@ import pygame
 import os, sys
 import math
 import numpy as np
+from win32api import GetSystemMetrics
 modpath = os.path.abspath(os.path.split(sys.argv[0])[0])
 sys.path.append(modpath)
-
 from .game import *
 
-# lines = 0
-# files = ['assests', 'game', 'scene', 'utilities']
-# for file in files:
-#         f = open(r'./astron/' + file + '.py', 'r').read()
-#         lines += f.count('\n')
-# print(lines)
+# Get screen resolution
 
-# screen_x, screen_y = 1920, 1080
-screen_x, screen_y = 1366, 768
-
+actual_x, actual_y = GetSystemMetrics(0), GetSystemMetrics(1)
+screen_x, screen_y = int(actual_x), int(actual_x * 768/1366)
 
 ############# LEVEL 1 #############
 
@@ -99,6 +93,4 @@ game = Game(scenes = [
         level3, 
         level4,
         level5,        
-        ], fullscreen=True, fps=60)
-
-# game.startGame(splash=True)
+        ], fullscreen=True, fps=120)
